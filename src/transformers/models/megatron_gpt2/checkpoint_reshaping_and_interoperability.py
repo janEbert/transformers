@@ -291,8 +291,10 @@ def get_megatron_sharded_states(args, tp_size, pp_size, pp_rank):
     tp_state_dicts = []
     for i in range(tp_size):
         sub_dir_name = f"mp_rank_{i:02d}" if pp_size == 1 else f"mp_rank_{i:02d}_{pp_rank:03d}"
-        checkpoint_name = os.listdir(os.path.join(args.load_path, sub_dir_name))[0]
-        checkpoint_path = os.path.join(args.load_path, sub_dir_name, checkpoint_name)
+        for checkpoint_name in ["model_optim_rng.pt", "model_rng.pt"]:
+            checkpoint_path = os.path.join(args.load_path, sub_dir_name, checkpoint_name)
+            if os.path.isfile(checkpoint_path):
+                break
         state_dict = torch.load(checkpoint_path, map_location="cpu")
         tp_state_dicts.append(state_dict)
     return tp_state_dicts
@@ -329,8 +331,10 @@ def convert_checkpoint_from_megatron_to_transformers(args):
     possible_sub_dirs = ["mp_rank_00", "mp_rank_00_000"]
     for sub_dir in possible_sub_dirs:
         if sub_dir in sub_dirs:
-            rank0_checkpoint_name = os.listdir(os.path.join(args.load_path, sub_dir))[0]
-            rank0_checkpoint_path = os.path.join(args.load_path, sub_dir, rank0_checkpoint_name)
+            for rank0_checkpoint_name in ["model_optim_rng.pt", "model_rng.pt"]:
+                rank0_checkpoint_path = os.path.join(args.load_path, sub_dir, rank0_checkpoint_name)
+                if os.path.isfile(rank0_checkpoint_path):
+                    break
             break
     print(f"Loading Megatron-LM checkpoint arguments from: {rank0_checkpoint_path}")
     state_dict = torch.load(rank0_checkpoint_path, map_location="cpu")
